@@ -1,0 +1,150 @@
+.app {
+  width: 100%;
+  max-width: 800px;
+  min-height: 600px;
+  margin: 2rem;
+  padding: 2rem;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(5px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+
+  header {
+    margin-bottom: 2rem;
+
+    h1 {
+      font-size: 2.5rem;
+      color: #646cff;
+      margin-bottom: 1rem;
+    }
+
+    .players {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 1rem;
+
+      .player {
+        background: rgba(100, 108, 255, 0.1);
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+
+        &.current {
+          background: rgba(100, 108, 255, 0.3);
+          border: 1px solid #646cff;
+        }
+
+        .name {
+          font-weight: bold;
+        }
+
+        .score {
+          font-size: 0.9rem;
+          color: #888;
+        }
+
+        .status {
+          font-size: 0.8rem;
+          color: #ff6464;
+        }
+      }
+    }
+  }
+
+  main {
+    .join-screen,
+    .waiting-screen,
+    .game-screen {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      align-items: center;
+    }
+
+    .current-player {
+      font-size: 1.2rem;
+      color: #646cff;
+    }
+
+    .letters {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+
+      span {
+        color: #646cff;
+        font-weight: bold;
+      }
+    }
+
+    .timer {
+      font-size: 1.5rem;
+      color: #888;
+    }
+
+    .error {
+      color: #ff6464;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    form {
+      display: flex;
+      gap: 1rem;
+      width: 100%;
+      max-width: 400px;
+
+      input {
+        flex: 1;
+        padding: 0.6rem 1.2rem;
+        border-radius: 8px;
+        border: 1px solid #646cff;
+        background: transparent;
+        color: inherit;
+        font-size: 1rem;
+
+        &:focus {
+          outline: none;
+          border-color: #535bf2;
+        }
+
+        &:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+      }
+    }
+  }
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #646cff;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.25s;
+
+  &:hover:not(:disabled) {
+    background-color: #535bf2;
+  }
+
+  &:focus,
+  &:focus-visible {
+    outline: 4px auto -webkit-focus-ring-color;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
