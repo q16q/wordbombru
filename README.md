@@ -25,4 +25,4 @@ npm run build
 npm run start
 ```
 ## contact
-email: [q16@q16.dev](mailto://q16@q16.dev)
+email: [q16@q16.dev](mailto:q16@q16.dev)
