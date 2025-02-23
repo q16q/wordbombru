@@ -2,11 +2,15 @@ import React, { useState, useEffect } from 'react'
 import { io, Socket } from 'socket.io-client'
 import './styles/App.scss'
 
+// Определяем URL сервера в зависимости от окружения
+const SERVER_URL = window.location.origin // В продакшене используем текущий домен
+
 interface Player {
   id: string;
   name: string;
   score: number;
   isReady: boolean;
+  currentInput?: string;
 }
 
 interface GameState {
@@ -14,6 +18,7 @@ interface GameState {
   currentPlayer: string | null;
   currentLetters: string;
   timeLeft: number;
+  usedWords?: string[];
 }
 
 function App() {
@@ -24,9 +29,21 @@ function App() {
   const [input, setInput] = useState<string>('');
   const [isJoined, setIsJoined] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
+  const [connectionError, setConnectionError] = useState<string>('');
 
   useEffect(() => {
-    const newSocket = io('http://localhost:3000');
+    const newSocket = io(SERVER_URL);
+    
+    newSocket.on('connect', () => {
+      console.log('Connected to server!');
+      setConnectionError('');
+    });
+
+    newSocket.on('connect_error', (error) => {
+      console.error('Connection error:', error);
+      setConnectionError('Ошибка подключения к серверу. Пожалуйста, попробуйте позже.');
+    });
+
     setSocket(newSocket);
 
     return () => {
@@ -63,6 +80,7 @@ function App() {
 
   const handleReady = () => {
     if (!socket) return;
+    console.log('Sending ready event');
     socket.emit('ready');
   };
 
@@ -77,8 +95,30 @@ function App() {
     }
   };
 
+  const handleSkip = () => {
+    if (!socket) return;
+    socket.emit('skip');
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setInput(value);
+    socket?.emit('input', value);
+  };
+
   if (!socket) {
-    return <div className="app">Подключение к серверу...</div>;
+    return (
+      <div className="app">
+        {connectionError ? (
+          <div className="error-screen">
+            <h2>Ошибка подключения</h2>
+            <p>{connectionError}</p>
+          </div>
+        ) : (
+          'Подключение к серверу...'
+        )}
+      </div>
+    );
   }
 
   if (!isJoined) {
@@ -121,10 +161,17 @@ function App() {
         <h1>WordBomb RU</h1>
         <div className="players">
           {gameState.players.map(player => (
-            <div key={player.id} className={`player ${player.id === gameState.currentPlayer ? 'current' : ''}`}>
-              <span className="name">{player.name}</span>
-              <span className="score">Очки: {player.score}</span>
-              {!player.isReady && <span className="status">(Не готов)</span>}
+            <div 
+              key={player.id} 
+              className={`player ${player.id === gameState.currentPlayer ? 'current' : ''}`}
+            >
+              <div className="player-name">{player.name}</div>
+              <div className="player-score">Очки: {player.score}</div>
+              {player.currentInput && (
+                <div className="player-input">
+                  Печатает: {player.currentInput}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -150,12 +197,38 @@ function App() {
               <input
                 type="text"
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={handleInputChange}
                 placeholder="Введите слово..."
                 disabled={!isCurrentPlayer}
+                ref={(inputRef) => {
+                  if (isCurrentPlayer && inputRef) {
+                    inputRef.focus();
+                  }
+                }}
               />
-              <button type="submit" disabled={!isCurrentPlayer}>Отправить</button>
+              <button 
+                type="submit" 
+                disabled={!isCurrentPlayer}
+              >
+                Отправить
+              </button>
+              <button 
+                onClick={handleSkip}
+                disabled={!isCurrentPlayer}
+              >
+                Пропустить
+              </button>
             </form>
+            {/* {gameState.usedWords && gameState.usedWords.length > 0 && (
+              <div className="used-words">
+                <h3>Использованные слова:</h3>
+                <div className="words-list">
+                  {gameState.usedWords.map((word, index) => (
+                    <span key={index} className="used-word">{word}</span>
+                  ))}
+                </div>
+              </div>
+            )} */}
           </div>
         )}
       </main>

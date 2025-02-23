@@ -25,6 +25,10 @@ class DictionaryService {
         console.log(`Checking word: "${normalizedWord}" - ${isValid ? 'valid' : 'invalid'}`);
         return isValid;
     }
+
+    public areValidLetters(letters: string): boolean {
+        return Array.from(this.words).filter(word => word.toLowerCase().includes(letters.toLowerCase())).length >= 20;
+    }
 }
 
 export const dictionaryService = new DictionaryService();

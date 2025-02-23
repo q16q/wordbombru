@@ -7,6 +7,7 @@ interface Player {
     score: number;
     isReady: boolean;
     socket: Socket;
+    currentInput?: string;
 }
 
 export class GameRoom {
@@ -28,14 +29,20 @@ export class GameRoom {
             name,
             score: 0,
             isReady: false,
-            socket
+            socket,
+            currentInput: ''
         };
         this.players.set(socket.id, player);
         this.broadcastGameState();
 
         // Установка обработчиков событий для игрока
-        socket.on('ready', () => this.handlePlayerReady(socket.id));
+        socket.on('ready', () => {
+            console.log(`Player ${name} is ready.`);
+            this.handlePlayerReady(socket.id);
+        });
         socket.on('word', (word: string) => this.handleWord(socket.id, word));
+        socket.on('input', (input: string) => this.handleInput(socket.id, input));
+        socket.on('skip', () => this.handleSkip(socket.id));
         socket.on('disconnect', () => this.removePlayer(socket.id));
     }
 
@@ -49,17 +56,19 @@ export class GameRoom {
 
     private handlePlayerReady(playerId: string) {
         const player = this.players.get(playerId);
-        if (player) {
-            player.isReady = true;
-            this.broadcastGameState();
-            this.checkGameStart();
-        }
+        if (!player) return;
+
+        player.isReady = true;
+        console.log(`Player ${player.name} is marked as ready.`);
+        this.broadcastGameState();
+        this.checkGameStart();
     }
 
     private checkGameStart() {
-        const allPlayers = Array.from(this.players.values());
-        if (allPlayers.length >= 2 && allPlayers.every(p => p.isReady)) {
-            this.startGame();
+        const allReady = Array.from(this.players.values()).every(player => player.isReady);
+        if (allReady && this.players.size > 1) {
+            console.log('All players are ready. Starting game.');
+            this.nextTurn();
         }
     }
 
@@ -74,6 +83,7 @@ export class GameRoom {
         const vowels = 'аеёиоуыюя';
         const firstLetter = consonants[Math.floor(Math.random() * consonants.length)];
         const secondLetter = vowels[Math.floor(Math.random() * vowels.length)];
+        if(!dictionaryService.areValidLetters(firstLetter + secondLetter)) return this.generateLetters();
         return firstLetter + secondLetter;
     }
 
@@ -83,22 +93,23 @@ export class GameRoom {
         }
 
         const players = Array.from(this.players.values());
-        if (players.length < 2) return;
+        if (players.length === 0) return;
 
         const currentIndex = players.findIndex(p => p.id === this.currentPlayer);
         this.currentPlayer = players[(currentIndex + 1) % players.length].id;
         if(generateLetters) this.currentLetters = this.generateLetters();
         this.timeLeft = 10;
 
+        console.log(`Next turn: ${this.currentPlayer}, letters: ${this.currentLetters}`);
+
         this.broadcastGameState();
 
         this.timer = setInterval(() => {
-            this.timeLeft--;
+            this.timeLeft -= 1;
             if (this.timeLeft <= 0) {
                 this.handleTimeout();
-            } else {
-                this.broadcastGameState();
             }
+            this.broadcastGameState();
         }, 1000);
     }
 
@@ -138,17 +149,26 @@ export class GameRoom {
         this.nextTurn();
     }
 
+    private handleInput(playerId: string, input: string) {
+        const player = this.players.get(playerId);
+        if (!player) return;
+        
+        player.currentInput = input;
+        this.broadcastGameState();
+    }
+
+    private handleSkip(playerId: string) {
+        if (playerId !== this.currentPlayer) return;
+        const player = this.players.get(playerId);
+        if(player) player.score -= 10;
+        console.log(`Player ${playerId} skipped their turn.`);
+        this.nextTurn();
+    }
+
     private checkWord(word: string): boolean {
         if (word.length < 2) return false;
         if (!word.toLowerCase().includes(this.currentLetters.toLowerCase())) return false;
-        const alternateWords = [
-            word,
-            word.replaceAll('э', 'е'),
-            word.replaceAll('е', 'э'),
-            word.replaceAll('ё', 'е'),
-            word.replaceAll('е', 'ё')
-        ];
-        return alternateWords.some(altWord => dictionaryService.isValidWord(altWord));
+        return dictionaryService.isValidWord(word)
     }
 
     private broadcastGameState() {
@@ -157,11 +177,13 @@ export class GameRoom {
                 id: p.id,
                 name: p.name,
                 score: p.score,
+                currentInput: p.currentInput,
                 isReady: p.isReady
             })),
             currentPlayer: this.currentPlayer,
             currentLetters: this.currentLetters,
-            timeLeft: this.timeLeft
+            timeLeft: this.timeLeft,
+            usedWords: this.usedWords
         };
 
         for (const player of this.players.values()) {
