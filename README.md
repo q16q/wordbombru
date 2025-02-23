@@ -2,7 +2,7 @@
 > [!CAUTION]
 > this project is in alpha, expect bugs and bad ui  
   
-if you like my project, please give it a star ⭐ 🥺👉👈
+if you like this project, please give it a star ⭐ 🥺👉👈
 ## screenshots
 ![main menu](./img/main.png)
 ![lobby](./img/lobby.png)
